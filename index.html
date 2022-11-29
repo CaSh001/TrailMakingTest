@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Trail Making Test</title>
+    </head>
+    <body>
+<div id="game">
+<script src="js/phaser.min.js" type="text/javascript" charset="utf-8"></script>
+
+<script type="text/javascript">
+
+class Stroop extends Phaser.Scene
+{
+    constructor ()
+    {
+        super();
+        this.textStyle= { font: "22px Arial", fill: "#000000", align:"center" };
+        this.textStyleRed= { font: "22px Arial", fill: "#FF0000", align:"center" };
+        this.textStyleBlue= { font: "22px Arial", fill: " #0000FF", align:"center" };
+        this.textStyleYellow= { font: "22px Arial", fill: "#FFa500", align:"center" };
+        this.textStyleGreen= { font: "22px Arial", fill: "#008000", align:"center" };
+        this.textStyleFail= { font: "100px Arial", fill: "#000000", align:"center" };
+
+        this.arr = [];
+        this.content = [];
+        this.colors = ['RED','BLUE','GREEN','YELLOW'];
+        this.colorSolutions = [];
+
+        this.timelimit = 45
+        this.level = 0;
+        this.isGameOver = false;
+        this.progress1 = 0;
+        this.progress2 = 0;
+
+        this.rows = 10
+        this.columns = 5
+        
+
+        this.finishButton = undefined;
+        this.colorButtons = [];
+        this.titleText = undefined;
+        
+        this.currentStartTime = new Date() //the start time of the current subset
+        this.startTime1 = new Date(); //start time of first subset and so on
+        this.startTime2 = undefined;
+        this.startTime3 = undefined;
+        this.endTime3 = undefined; //time when last subset ended
+    }
+
+
+    preload() {
+        //  this.load.crossOrigin = "anonymous";
+    //   this.load.image("button","assets/Button.jpg")
+        this.width, this.height = this.sys.game.canvas;
+        this.scale.pageAlignHorizontally = true;
+        this.scale.pageAlignVertically = true;
+    }
+
+    
+
+    checkGameOver(elapsed){
+        if(elapsed >= this.timelimit && !this.isGameOver && this.level < 3){
+            this.isGameOver = true;
+            this.clearAll()
+            var text = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY-this.cameras.main.height/3, "Out of time.", this.textStyleFail)
+            .setOrigin(0.5, 0.5);
+            this.displayStatistics()
+        }
+    
+    }
+
+    clearAll(){
+        for(var i = 0; i < this.content.length; i++){
+                for(var j = 0; j < this.content[i].length; j++){
+                    this.arr[i][j].destroy();
+                }
+            }
+        
+        this.finishButton.destroy();
+
+        for(var x = 0; x < this.colorButtons.length; x++){
+            this.colorButtons[x].destroy();
+        }
+        
+    }
+    
+
+    randomRange(min, max) { // min最小值，max最大值
+        return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    advanceSubset(){
+        this.currentStartTime = new Date()
+        this.level += 1;
+
+        if(this.level == 1){
+            this.finishButton.disableInteractive()
+            this.finishButton.visible = false;
+            this.startTime2 = new Date()
+            this.titleText.setText("Stroop test - Subset 2")
+
+            for(var i = 0; i < this.content.length; i++){
+                for(var j = 0; j < this.content[i].length; j++){
+                    switch(this.content[i][j]){
+                    case this.colors[0]:
+                        this.arr[i][j].setStyle(this.textStyleRed);
+                        break;
+                    case this.colors[1]:
+                        this.arr[i][j].setStyle(this.textStyleBlue);
+                        break;
+                    case this.colors[2]:
+                        this.arr[i][j].setStyle(this.textStyleGreen);
+                        break;
+                    case this.colors[3]:
+                        this.arr[i][j].setStyle(this.textStyleYellow);
+                        break;
+                    }
+                }
+            }
+            for(let x = 0; x < this.colors.length; x++){ //draw the color selection buttons
+                this.colorButtons[x] = this.add.text(this.cameras.main.centerX -280 + x*200, this.cameras.main.centerY + 300, this.colors[x], { font: "25px Arial", align:"center", borderradius:"25px", })
+                .setOrigin(0.5)
+                .setPadding(10)
+                .setStyle({ fill: '#000', backgroundColor: '#eee'  })
+                .setInteractive({ useHandCursor: true })
+                .on('pointerdown', () => this.clickColor(x))
+            }
+        }
+        else if(this.level == 2){
+            this.startTime3 = new Date()
+            this.titleText.setText("Stroop test - Subset 3")
+
+            for(var i = 0; i < this.content.length; i++){
+                this.colorSolutions[i] = []
+
+                for(var j = 0; j < this.content[i].length; j++){
+                    let randomNum = this.randomRange(0,4);
+                    this.arr[i][j].visible = true;
+
+                    switch(randomNum){
+                    case 0:
+                        this.arr[i][j].setStyle(this.textStyleRed);
+                        break;
+                    case 1:
+                        this.arr[i][j].setStyle(this.textStyleBlue);
+                        break;
+                    case 2:
+                        this.arr[i][j].setStyle(this.textStyleGreen);
+                        break;
+                    case 3:
+                        this.arr[i][j].setStyle(this.textStyleYellow);
+                        break;
+                    }
+                    this.colorSolutions[i][j] = this.colors[randomNum]
+                }
+            }
+        }
+        else{
+            this.endTime3 = new Date()
+            this.victory()
+        }
+
+    }
+
+    victory(){
+            this.clearAll()
+            this.displayStatistics();
+            this.isGameOver = true;
+
+            var text = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY-this.cameras.main.height/3, "Test finished.", this.textStyleFail)
+            .setOrigin(0.5)
+    }
+
+    clickColor(clickedIndex){
+        if(this.level == 1){ //subset 2
+            let x = parseInt(this.progress1 / this.columns)
+            let y = this.progress1 % this.columns
+
+            if(this.colors[clickedIndex] == this.content[x][y]){
+                this.progress1 += 1;
+                this.arr[x][y].visible = false;
+            }
+
+            if(this.progress1 >= this.arr.length * this.columns){
+                console.log("May now progress to subset 3")
+                this.advanceSubset()
+            }
+        }
+
+        if(this.level == 2){ //subset 3
+            let x = parseInt(this.progress2 / this.columns)
+            let y = this.progress2 % this.columns
+
+            if(this.colors[clickedIndex] == this.colorSolutions[x][y]){
+                this.progress2 += 1;
+                this.arr[x][y].destroy();
+            }
+
+            if(this.progress2 >= this.arr.length * this.columns){
+                console.log("All subsets finished!")
+                this.advanceSubset()
+                //this.finishButton.setInteractive({ useHandCursor: true })
+            }
+        }
+    }
+        
+    create() {
+        this.titleText = this.add.text(this.cameras.main.centerX,10, 'Stroop test - Subset 1', this.textStyle).setOrigin(0.5,0);
+        for(var x = 0; x < this.rows; x++){
+            this.arr[x] = [];
+            this.content[x] = [];
+            for(var y = 0; y < this.columns; y++){
+                let randomNum = this.randomRange(0,4);
+                this.arr[x][y] =this.add.text(y*(this.cameras.main.width/5) + 100, x * (this.cameras.main.height/13) + 70, this.colors[randomNum], this.textStyle).setOrigin(0.5);;
+                this.content[x][y] = this.colors[randomNum];
+            }
+        }
+        
+        this.finishButton = this.add.text(this.cameras.main.centerX, 750, 'Finished', { font: "20px Arial", align:"center", borderradius:"25px", })
+            .setOrigin(0.5)
+            .setPadding(10)
+            .setStyle({ backgroundColor: '#000' })
+            .setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => this.advanceSubset())
+            .on('pointerover', () => this.finishButton.setStyle({ fill: '#f39c12' }))
+            .on('pointerout', () => this.finishButton.setStyle({ fill: '#FFF' }))
+            .setOrigin(0.5);
+    }
+
+    update() {
+        if(!this.isGameOver){
+            let now = new Date();
+
+            let elapsedTime = (now - this.currentStartTime);
+            //currentTime = Math.floor(currentTime/10) + scope.taroltIdo; 
+            let elapsedSeconds = Math.floor(elapsedTime/1000%60) //convert to sec
+            this.checkGameOver(elapsedSeconds)
+        }
+    }
+
+    render() {
+    }
+
+    displayStatistics() {
+        let textStyleStatistics = { font: "22px Arial", fill: "#000000", align:"center"};
+
+        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY-30, 'Subset 1:', textStyleStatistics).setOrigin(0.5,0);
+        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY+30, 'Subset 2:', textStyleStatistics).setOrigin(0.5,0);
+        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY+90, 'Subset 3:', textStyleStatistics).setOrigin(0.5,0);
+        
+        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY-90, '', textStyleStatistics).setOrigin(0.5,0);
+        this.add.text(this.cameras.main.centerX,this.cameras.main.centerY-90, 'Completion time', textStyleStatistics).setOrigin(0.5,0);
+        this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY-90, 'Correct responses', textStyleStatistics).setOrigin(0.5,0);
+        
+        let row1time = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY-30, '', textStyleStatistics).setOrigin(0.5,0);
+        let row2time = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY+30, '', textStyleStatistics).setOrigin(0.5,0);
+        let row3time = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY+90, '', textStyleStatistics).setOrigin(0.5,0);
+
+        //let row1points = this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY-30, 'b', textStyleStatistics).setOrigin(0.5,0);
+        let row2points = this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY+30, '', textStyleStatistics).setOrigin(0.5,0);
+        let row3points = this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY+90, '', textStyleStatistics).setOrigin(0.5,0);
+
+        if(this.level == 0){
+            row1time.setText("Out of time. Test inavlid.")
+            
+        }else{
+            if(this.level > 0){
+                let subset1CompletionTime = this.msecToDigital(this.startTime2 - this.startTime1)
+
+                row1time.setText(subset1CompletionTime)
+
+                if(this.startTime3){
+                    let subset2CompletionTime = this.msecToDigital(this.startTime3 - this.startTime2)
+                    row2time.setText(subset2CompletionTime)
+                }else{
+                    row2time.setText("Out of time")
+                }
+                row2points.setText(this.progress1)
+            }
+            if(this.level > 1){
+                if(this.endTime3){
+                    let subset3CompletionTime = this.msecToDigital(this.endTime3 - this.startTime3)
+                    row3time.setText(subset3CompletionTime)
+                }else{
+                    row3time.setText("Out of time")
+                }
+                row3points.setText(this.progress2)
+            }
+        }
+    }
+
+    msecToDigital(msec){
+        let sc = Math.floor(msec/1000%60).toLocaleString('en-US', {
+            minimumIntegerDigits: 1,
+            useGrouping: false
+        });
+        let msc = (msec % 1000).toLocaleString('en-US', {
+            minimumIntegerDigits: 2,
+            useGrouping: false
+        });
+        return sc + "." + msc + " seconds";
+    }
+    
+}
+config = {
+    type: Phaser.AUTO,
+    width: 1024,
+    height: 768,
+    backgroundColor: '#ffffff',
+    scene: [ Stroop ]
+    };
+const game = new Phaser.Game(config);
+</script>
+           
+    </body>
+</html>
