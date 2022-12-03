@@ -16,10 +16,6 @@ class Stroop extends Phaser.Scene
     {
         super();
         this.textStyle= { font: "22px Arial", fill: "#000000", align:"center" };
-        this.textStyleRed= { font: "22px Arial", fill: "#FF0000", align:"center" };
-        this.textStyleBlue= { font: "22px Arial", fill: " #0000FF", align:"center" };
-        this.textStyleYellow= { font: "22px Arial", fill: "#FFa500", align:"center" };
-        this.textStyleGreen= { font: "22px Arial", fill: "#008000", align:"center" };
         this.textStyleFail= { font: "100px Arial", fill: "#000000", align:"center" };
 
         this.circles = [];
@@ -29,33 +25,24 @@ class Stroop extends Phaser.Scene
         this.radius = 30;
         this.thickness = 1;
         this.minDistance = 100;
-        this.circleCount = 3
+        this.circleCount = 25
 
         this.timelimit = 300 //"If the test taker fails to complete the test within 5 minutes, the test is discontinued"
         this.level = 0;
         this.isGameOver = false;
 
-        this.progress = 0; //put as a high value and click any circle if you want to skip to part B for debugging
-
-        this.rows = 10
-        this.columns = 5
+        this.progress = 0;
         
-
-        this.finishButton = undefined;
-        this.colorButtons = [];
         this.titleText = undefined;
         
-        this.overallTime = new Date() //the start time of the current subset
-        this.startTime1 = new Date(); //start time of first subset and so on
+        this.overallTime = new Date() //the start time of the current part
+        this.startTime1 = new Date(); //start time of first part and so on
         this.startTime2 = undefined;
-        this.startTime3 = undefined;
-        this.finishTime = undefined; //time when last subset ended
+        this.finishTime = undefined; //time when last part ended
     }
 
 
     preload() {
-        //  this.load.crossOrigin = "anonymous";
-    //   this.load.image("button","assets/Button.jpg")
         this.width, this.height = this.sys.game.canvas;
         this.scale.pageAlignHorizontally = true;
         this.scale.pageAlignVertically = true;
@@ -83,14 +70,14 @@ class Stroop extends Phaser.Scene
         return String.fromCharCode(first+number);
     }
 
-    advanceSubset(){
+    advancePart(){
         this.level += 1;
         this.clearMap()
 
         if(this.level == 1){
             this.startTime2 = new Date()
             this.progress = 0
-            this.titleText.setText("Stroop test - Subset B")
+            this.titleText.setText("Trail making test - Part B")
             this.populateMap(true)
         }
         else{
@@ -134,7 +121,7 @@ class Stroop extends Phaser.Scene
         }
         if(this.progress >= this.circles.length -1){
                 console.log("May now progress to Part B")
-                this.advanceSubset()
+                this.advancePart()
         }
     }
 
@@ -182,9 +169,6 @@ class Stroop extends Phaser.Scene
     }
         
     create() {
-        this.overallTime = new Date() //I made the timers start at creation which is pretty precise. We could also put it at first render if we want even more precision
-        this.startTime1 = new Date();
-
         this.titleText = this.add.text(this.cameras.main.centerX,10, 'Trail making test - Part A', this.textStyle).setOrigin(0.5,0);
 
         this.populateMap()
@@ -195,7 +179,6 @@ class Stroop extends Phaser.Scene
             let now = new Date();
 
             let elapsedTime = (now - this.overallTime);
-            //currentTime = Math.floor(currentTime/10) + scope.taroltIdo; 
             let elapsedSeconds = Math.floor(elapsedTime/1000%60) //convert to sec
             this.checkGameOver(elapsedSeconds)
         }
@@ -207,47 +190,37 @@ class Stroop extends Phaser.Scene
     displayStatistics() {
         let textStyleStatistics = { font: "22px Arial", fill: "#000000", align:"center"};
 
-        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY-30, 'Subset 1:', textStyleStatistics).setOrigin(0.5,0);
-        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY+30, 'Subset 2:', textStyleStatistics).setOrigin(0.5,0);
-        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY+90, 'Subset 3:', textStyleStatistics).setOrigin(0.5,0);
+        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY-30, 'Part A:', textStyleStatistics).setOrigin(0.5,0);
+        this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY+30, 'Part B:', textStyleStatistics).setOrigin(0.5,0);
         
         this.add.text(this.cameras.main.centerX-200,this.cameras.main.centerY-90, '', textStyleStatistics).setOrigin(0.5,0);
         this.add.text(this.cameras.main.centerX,this.cameras.main.centerY-90, 'Completion time', textStyleStatistics).setOrigin(0.5,0);
-        this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY-90, 'Correct responses', textStyleStatistics).setOrigin(0.5,0);
+        this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY-90, 'Progress', textStyleStatistics).setOrigin(0.5,0);
         
         let row1time = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY-30, '', textStyleStatistics).setOrigin(0.5,0);
         let row2time = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY+30, '', textStyleStatistics).setOrigin(0.5,0);
-        let row3time = this.add.text(this.cameras.main.centerX,this.cameras.main.centerY+90, '', textStyleStatistics).setOrigin(0.5,0);
 
-        //let row1points = this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY-30, 'b', textStyleStatistics).setOrigin(0.5,0);
+        let row1points = this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY-30, 'Incomplete', textStyleStatistics).setOrigin(0.5,0);
         let row2points = this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY+30, '', textStyleStatistics).setOrigin(0.5,0);
-        let row3points = this.add.text(this.cameras.main.centerX+200,this.cameras.main.centerY+90, '', textStyleStatistics).setOrigin(0.5,0);
 
         if(this.level == 0){
-            row1time.setText("Out of time. Test inavlid.")
+            row1time.setText("Ran out of time.")
             
         }else{
             if(this.level > 0){
-                let subset1CompletionTime = this.msecToDigital(this.startTime2 - this.startTime1)
+                let partACompletionTime = this.msecToDigital(this.startTime2 - this.startTime1)
 
-                row1time.setText(subset1CompletionTime)
+                row1time.setText(partACompletionTime)
+                row1points.setText("Complete")
 
-                if(this.startTime3){
-                    let subset2CompletionTime = this.msecToDigital(this.startTime3 - this.startTime2)
-                    row2time.setText(subset2CompletionTime)
-                }else{
-                    row2time.setText("Out of time")
-                }
-                row2points.setText(this.progress1)
-            }
-            if(this.level > 1){
                 if(this.finishTime){
-                    let subset3CompletionTime = this.msecToDigital(this.finishTime - this.startTime3)
-                    row3time.setText(subset3CompletionTime)
+                    let partBCompletionTime = this.msecToDigital(this.finishTime - this.startTime2)
+                    row2time.setText(partBCompletionTime)
+                    row2points.setText("Complete")
                 }else{
-                    row3time.setText("Out of time")
+                    row2time.setText("Ran out of time.")
+                    row2points.setText(this.progress)
                 }
-                row3points.setText(this.progress2)
             }
         }
     }
