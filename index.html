@@ -30,12 +30,15 @@ class Stroop extends Phaser.Scene
         this.radius = 30;
         this.thickness = 1;
         this.minDistance = 100;
+        this.circleCount = 13
 
         this.timelimit = 300 //"If the test taker fails to complete the test within 5 minutes, the test is discontinued"
         this.level = 0;
         this.isGameOver = false;
         this.progress1 = 0;
         this.progress2 = 0;
+
+        this.progress = 0;
 
         this.rows = 10
         this.columns = 5
@@ -225,39 +228,39 @@ class Stroop extends Phaser.Scene
         }
         return !!(good && x && y);
     }
+
+    clickCircle(number){
+        if(this.progress + 1 == number){ //Check if correct circle was selected
+            if(number > 0){ //Don't draw a line if this is the first ever correct circle selection
+                this.add.line(0,0,this.circles[this.progress].x, this.circles[this.progress].y, this.circles[number].x, this.circles[number].y,100,100 ).setLineWidth(1).setOrigin(0);
+            }
+            this.progress++
+        }
+    }
         
     create() {
         this.titleText = this.add.text(this.cameras.main.centerX,10, 'Trail making test - Part A', this.textStyle).setOrigin(0.5,0);
 
         let coordinates = []
         let counter = 0
-        while(this.circles.length < 13){
+        for(let counter = 0; counter < this.circleCount; counter++){
             let x;
             let y;
 
-            while(!this.goodPosCheck(x,y)){ //there's only 13 circles, so this approach should be fine
+            while(!this.goodPosCheck(x,y)){ //there's usually only 13 circles, so this approach should be fine
                 x = this.randomRange(this.radius+this.thickness,this.cameras.main.width-this.radius-this.thickness) //Leave some space on the side. More space needed if the circles are bigger.
                 y = this.randomRange(70,this.cameras.main.height-this.radius-this.thickness)
             }
             
-            counter++
             let circle = this.add.circle(x,y,this.radius).setOrigin(0.5,0.5).setStrokeStyle(this.thickness, 'black')
-            let text = this.add.text(0,0, counter, this.textStyle).setOrigin(0.5,0.5);
+                .setInteractive({ useHandCursor: true })
+                .on('pointerdown', () => this.clickCircle(counter))
+            let text = this.add.text(0,0, counter+1, this.textStyle).setOrigin(0.5,0.5);
 
-            this.circles.push(circle);
-            this.texts.push(text);
-            Phaser.Display.Align.In.Center( text, circle );
+            this.circles[counter] = circle;
+            this.texts[counter] = text;
+            Phaser.Display.Align.In.Center( text, circle ); //put the text into the center of the circle
         }
-        /*
-        this.finishButton = this.add.text(this.cameras.main.centerX, 750, 'Finished', { font: "20px Arial", align:"center", borderradius:"25px", })
-            .setOrigin(0.5)
-            .setPadding(10)
-            .setStyle({ backgroundColor: '#000' })
-            .setInteractive({ useHandCursor: true })
-            .on('pointerdown', () => this.advanceSubset())
-            .on('pointerover', () => this.finishButton.setStyle({ fill: '#f39c12' }))
-            .on('pointerout', () => this.finishButton.setStyle({ fill: '#FFF' }))
-            .setOrigin(0.5);*/
     }
 
     update() {
