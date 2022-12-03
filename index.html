@@ -29,7 +29,7 @@ class Stroop extends Phaser.Scene
         this.radius = 30;
         this.thickness = 1;
         this.minDistance = 100;
-        this.circleCount = 5
+        this.circleCount = 3
 
         this.timelimit = 300 //"If the test taker fails to complete the test within 5 minutes, the test is discontinued"
         this.level = 0;
@@ -49,7 +49,7 @@ class Stroop extends Phaser.Scene
         this.startTime1 = new Date(); //start time of first subset and so on
         this.startTime2 = undefined;
         this.startTime3 = undefined;
-        this.endTime3 = undefined; //time when last subset ended
+        this.finishTime = undefined; //time when last subset ended
     }
 
 
@@ -94,14 +94,13 @@ class Stroop extends Phaser.Scene
             this.populateMap(true)
         }
         else{
-            this.endTime3 = new Date()
+            this.finishTime = new Date()
             this.victory()
         }
 
     }
 
     victory(){
-            this.clearMap()
             this.displayStatistics();
             this.isGameOver = true;
 
@@ -127,8 +126,8 @@ class Stroop extends Phaser.Scene
     }
 
     clickCircle(number){
-        if(this.progress + 1 == number){ //Check if correct circle was selected
-            if(number > 0){ //Don't draw a line if this is the first ever correct circle selection
+        if(this.progress + 1 == number){ //check if correct circle was selected
+            if(number > 0){ //don't draw a line if this is the first ever correct circle selection
                 this.lines.push(this.add.line(0,0,this.circles[this.progress].x, this.circles[this.progress].y, this.circles[number].x, this.circles[number].y,100,100 ).setLineWidth(1).setOrigin(0));
             }
             this.progress++
@@ -143,7 +142,9 @@ class Stroop extends Phaser.Scene
         for(let i = 0; i < this.circles.length; i++){
             this.circles[i].destroy()
             this.texts[i].destroy()
-            if(i < this.lines.length){this.lines[i].destroy()}
+        }
+        for(let i = 0; i < this.lines.length; i++){
+            this.lines[i].destroy()
         }
     }
 
@@ -240,8 +241,8 @@ class Stroop extends Phaser.Scene
                 row2points.setText(this.progress1)
             }
             if(this.level > 1){
-                if(this.endTime3){
-                    let subset3CompletionTime = this.msecToDigital(this.endTime3 - this.startTime3)
+                if(this.finishTime){
+                    let subset3CompletionTime = this.msecToDigital(this.finishTime - this.startTime3)
                     row3time.setText(subset3CompletionTime)
                 }else{
                     row3time.setText("Out of time")
