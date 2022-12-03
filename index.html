@@ -24,9 +24,8 @@ class Stroop extends Phaser.Scene
 
         this.circles = [];
         this.texts = [];
-        this.content = [];
-        this.colors = ['RED','BLUE','GREEN','YELLOW'];
-        this.colorSolutions = [];
+        this.lines = [];
+        
         this.radius = 30;
         this.thickness = 1;
         this.minDistance = 100;
@@ -48,7 +47,7 @@ class Stroop extends Phaser.Scene
         this.colorButtons = [];
         this.titleText = undefined;
         
-        this.currentStartTime = new Date() //the start time of the current subset
+        this.overallTime = new Date() //the start time of the current subset
         this.startTime1 = new Date(); //start time of first subset and so on
         this.startTime2 = undefined;
         this.startTime3 = undefined;
@@ -69,99 +68,27 @@ class Stroop extends Phaser.Scene
     checkGameOver(elapsed){
         if(elapsed >= this.timelimit && !this.isGameOver && this.level < 3){
             this.isGameOver = true;
-            this.clearAll()
+            this.clearMap()
             var text = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY-this.cameras.main.height/3, "Out of time.", this.textStyleFail)
             .setOrigin(0.5, 0.5);
             this.displayStatistics()
         }
     
     }
-
-    clearAll(){
-        for(var i = 0; i < this.content.length; i++){
-                for(var j = 0; j < this.content[i].length; j++){
-                    this.circles[i][j].destroy();
-                }
-            }
-        
-        this.finishButton.destroy();
-
-        for(var x = 0; x < this.colorButtons.length; x++){
-            this.colorButtons[x].destroy();
-        }
-        
-    }
     
-
     randomRange(min, max) { // min最小值，max最大值
         return Math.floor(Math.random() * (max - min)) + min;
     }
 
     advanceSubset(){
-        this.currentStartTime = new Date()
         this.level += 1;
+        this.clearMap()
 
         if(this.level == 1){
-            this.finishButton.disableInteractive()
-            this.finishButton.visible = false;
             this.startTime2 = new Date()
-            this.titleText.setText("Stroop test - Subset 2")
-
-            for(var i = 0; i < this.content.length; i++){
-                for(var j = 0; j < this.content[i].length; j++){
-                    switch(this.content[i][j]){
-                    case this.colors[0]:
-                        this.circles[i][j].setStyle(this.textStyleRed);
-                        break;
-                    case this.colors[1]:
-                        this.circles[i][j].setStyle(this.textStyleBlue);
-                        break;
-                    case this.colors[2]:
-                        this.circles[i][j].setStyle(this.textStyleGreen);
-                        break;
-                    case this.colors[3]:
-                        this.circles[i][j].setStyle(this.textStyleYellow);
-                        break;
-                    }
-                }
-            }
-            for(let x = 0; x < this.colors.length; x++){ //draw the color selection buttons
-                this.colorButtons[x] = this.add.text(this.cameras.main.centerX -280 + x*200, this.cameras.main.centerY + 300, this.colors[x], { font: "25px Arial", align:"center", borderradius:"25px", })
-                .setOrigin(0.5)
-                .setPadding(10)
-                .setStyle({ fill: '#000', backgroundColor: '#eee'  })
-                .setInteractive({ useHandCursor: true })
-                .on('pointerdown', () => this.clickColor(x))
-            }
-        }
-        else if(this.level == 2){
-            this.startTime3 = new Date()
-            this.titleText.setText("Stroop test - Subset 3")
-
-            for(var i = 0; i < this.content.length; i++){
-                this.colorSolutions[i] = []
-
-                for(var j = 0; j < this.content[i].length; j++){
-                    let randomNum = this.randomRange(0,4);
-                    this.circles[i][j].visible = true;
-
-                    switch(randomNum){
-                    case 0:
-                        this.circles[i][j].setStyle(this.textStyleRed);
-                        break;
-                    case 1:
-                        this.circles[i][j].setStyle(this.textStyleBlue);
-                        break;
-                    case 2:
-                        this.circles[i][j].setStyle(this.textStyleGreen);
-                        break;
-                    case 3:
-                        this.circles[i][j].setStyle(this.textStyleYellow);
-                        break;
-                    }
-                    this.colorSolutions[i][j] = this.colors[randomNum]
-                }
-            }
+            this.progress = 0
+            this.titleText.setText("Stroop test - Subset B")
+            this.populateMap() //some special parameter here
         }
         else{
             this.endTime3 = new Date()
@@ -171,45 +98,12 @@ class Stroop extends Phaser.Scene
     }
 
     victory(){
-            this.clearAll()
+            this.clearMap()
             this.displayStatistics();
             this.isGameOver = true;
 
             var text = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY-this.cameras.main.height/3, "Test finished.", this.textStyleFail)
             .setOrigin(0.5)
-    }
-
-    clickColor(clickedIndex){
-        if(this.level == 1){ //subset 2
-            let x = parseInt(this.progress1 / this.columns)
-            let y = this.progress1 % this.columns
-
-            if(this.colors[clickedIndex] == this.content[x][y]){
-                this.progress1 += 1;
-                this.circles[x][y].visible = false;
-            }
-
-            if(this.progress1 >= this.circles.length * this.columns){
-                console.log("May now progress to subset 3")
-                this.advanceSubset()
-            }
-        }
-
-        if(this.level == 2){ //subset 3
-            let x = parseInt(this.progress2 / this.columns)
-            let y = this.progress2 % this.columns
-
-            if(this.colors[clickedIndex] == this.colorSolutions[x][y]){
-                this.progress2 += 1;
-                this.circles[x][y].destroy();
-            }
-
-            if(this.progress2 >= this.circles.length * this.columns){
-                console.log("All subsets finished!")
-                this.advanceSubset()
-                //this.finishButton.setInteractive({ useHandCursor: true })
-            }
-        }
     }
 
     pointDistance(x1,y1,x2,y2){
@@ -232,17 +126,26 @@ class Stroop extends Phaser.Scene
     clickCircle(number){
         if(this.progress + 1 == number){ //Check if correct circle was selected
             if(number > 0){ //Don't draw a line if this is the first ever correct circle selection
-                this.add.line(0,0,this.circles[this.progress].x, this.circles[this.progress].y, this.circles[number].x, this.circles[number].y,100,100 ).setLineWidth(1).setOrigin(0);
+                this.lines.push(this.add.line(0,0,this.circles[this.progress].x, this.circles[this.progress].y, this.circles[number].x, this.circles[number].y,100,100 ).setLineWidth(1).setOrigin(0));
             }
             this.progress++
         }
+        if(this.progress >= this.circles.length -1){
+                console.log("May now progress to Part B")
+                this.advanceSubset()
+        }
+        console.log(this.progress)
     }
-        
-    create() {
-        this.titleText = this.add.text(this.cameras.main.centerX,10, 'Trail making test - Part A', this.textStyle).setOrigin(0.5,0);
 
-        let coordinates = []
-        let counter = 0
+    clearMap(){
+        for(let i = 0; i < this.circles.length; i++){
+            this.circles[i].destroy()
+            this.texts[i].destroy()
+            if(i < this.lines.length){this.lines[i].destroy()}
+        }
+    }
+
+    populateMap(){
         for(let counter = 0; counter < this.circleCount; counter++){
             let x;
             let y;
@@ -262,12 +165,21 @@ class Stroop extends Phaser.Scene
             Phaser.Display.Align.In.Center( text, circle ); //put the text into the center of the circle
         }
     }
+        
+    create() {
+        this.overallTime = new Date() //I made the timers start at creation which is pretty precise. We could also put it at first render if we want even more precision
+        this.startTime1 = new Date();
+
+        this.titleText = this.add.text(this.cameras.main.centerX,10, 'Trail making test - Part A', this.textStyle).setOrigin(0.5,0);
+
+        this.populateMap()
+    }
 
     update() {
         if(!this.isGameOver){
             let now = new Date();
 
-            let elapsedTime = (now - this.currentStartTime);
+            let elapsedTime = (now - this.overallTime);
             //currentTime = Math.floor(currentTime/10) + scope.taroltIdo; 
             let elapsedSeconds = Math.floor(elapsedTime/1000%60) //convert to sec
             this.checkGameOver(elapsedSeconds)
