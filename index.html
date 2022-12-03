@@ -29,15 +29,13 @@ class Stroop extends Phaser.Scene
         this.radius = 30;
         this.thickness = 1;
         this.minDistance = 100;
-        this.circleCount = 13
+        this.circleCount = 5
 
         this.timelimit = 300 //"If the test taker fails to complete the test within 5 minutes, the test is discontinued"
         this.level = 0;
         this.isGameOver = false;
-        this.progress1 = 0;
-        this.progress2 = 0;
 
-        this.progress = 0;
+        this.progress = 0; //put as a high value and click any circle if you want to skip to part B for debugging
 
         this.rows = 10
         this.columns = 5
@@ -80,6 +78,11 @@ class Stroop extends Phaser.Scene
         return Math.floor(Math.random() * (max - min)) + min;
     }
 
+    numToChar(number) {
+        let first = 'A'.charCodeAt(0);
+        return String.fromCharCode(first+number);
+    }
+
     advanceSubset(){
         this.level += 1;
         this.clearMap()
@@ -88,7 +91,7 @@ class Stroop extends Phaser.Scene
             this.startTime2 = new Date()
             this.progress = 0
             this.titleText.setText("Stroop test - Subset B")
-            this.populateMap() //some special parameter here
+            this.populateMap(true)
         }
         else{
             this.endTime3 = new Date()
@@ -134,7 +137,6 @@ class Stroop extends Phaser.Scene
                 console.log("May now progress to Part B")
                 this.advanceSubset()
         }
-        console.log(this.progress)
     }
 
     clearMap(){
@@ -145,12 +147,14 @@ class Stroop extends Phaser.Scene
         }
     }
 
-    populateMap(){
+    populateMap(partB = false){
+        let partBcounter = 1 //counter specifically used for the number/character combination sequence of part B
         for(let counter = 0; counter < this.circleCount; counter++){
             let x;
             let y;
+            
 
-            while(!this.goodPosCheck(x,y)){ //there's usually only 13 circles, so this approach should be fine
+            while(!this.goodPosCheck(x,y)){ //there's usually only 25 circles, so this approach should be fine
                 x = this.randomRange(this.radius+this.thickness,this.cameras.main.width-this.radius-this.thickness) //Leave some space on the side. More space needed if the circles are bigger.
                 y = this.randomRange(70,this.cameras.main.height-this.radius-this.thickness)
             }
@@ -159,6 +163,16 @@ class Stroop extends Phaser.Scene
                 .setInteractive({ useHandCursor: true })
                 .on('pointerdown', () => this.clickCircle(counter))
             let text = this.add.text(0,0, counter+1, this.textStyle).setOrigin(0.5,0.5);
+
+            if(partB){
+                if(counter % 2 == 1){
+                    text.setText(this.numToChar(partBcounter-1)) //I put a -1 because we want number 1 to be followed by A
+                    partBcounter++
+                    console.log(partBcounter)
+                }else{
+                    text.setText(partBcounter)
+                }
+            }
 
             this.circles[counter] = circle;
             this.texts[counter] = text;
